@@ -16,7 +16,7 @@
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
 #define NUM_UFO     10                  // play with {n} UFOs
-#define LATENCY     70000               // microseconds per tick
+#define LATENCY     75000               // microseconds per tick
  
 #include <ncurses.h>
 #include <stdlib.h>
