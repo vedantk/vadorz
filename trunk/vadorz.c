@@ -15,8 +15,7 @@
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
-#define NUM_UFO     10                  // play with {n} UFOs
-#define LATENCY     75000               // microseconds per tick
+#define CONSTANT    80000
  
 #include <ncurses.h>
 #include <stdlib.h>
@@ -24,7 +23,10 @@
 #include <unistd.h>
  
 typedef unsigned short int num;
- 
+
+num NUM_UFO;
+uint LATENCY = CONSTANT-10000;
+
 struct Posn {
     num x;
     num y;
@@ -52,7 +54,7 @@ num rows;
 num cols;
  
 struct Posn aup;
-struct Ufo ufos[NUM_UFO];
+struct Ufo ufos[((CONSTANT/5000)*2)+10];
 struct shot_list shots;
  
 void quit(char* seq) {
@@ -168,6 +170,15 @@ void run_aup() {
         aup.y += (aup.y == rows-1) ? 0 : 1;
     } else if (in == ' ' || in == 'f' || in == 'F') {
         add_shot(mk_shot(aup, 1)); // register a shot going up
+    } else if (in == 'z' || in == 'Z') {
+        for (i=0; i < cols; ++i) {
+            struct Shot t;
+            t.alive = 1;
+            t.isGoingUp = 1;
+            t.pos.x = i;
+            t.pos.y = aup.y-1;
+            add_shot(t);
+        }
     } else if (in == 'q' || in =='Q' || in == KEY_EXIT) {
         quit("User Exit.\n");
     }
@@ -198,7 +209,35 @@ inline int is_hit(struct Posn obj, struct Posn pos) { // ship : bullet
             && pos.x >= obj.x)
         ? 1 : 0;
 }
- 
+
+void populate() {
+    if (LATENCY < 5000) {
+        quit("Wow. I can't believe you just won this game.\n");
+    }
+    
+    if (shots.dat) {
+        free(shots.dat);
+    }
+    
+    shots.cur = 0;
+    shots.max = 100;
+    shots.dat = (struct Shot*) malloc(shots.max * sizeof(struct Shot));
+    
+    aup.x = (cols / 2) - 7;
+    aup.y = rows-1;
+
+    num itr;
+    
+    for (itr=0; itr < NUM_UFO; ++itr) {
+        struct Ufo t;
+        t.pos.x = (itr * 7) + 2;
+        t.pos.y = 0;
+        t.alive = 1;
+        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0; // fix this
+        ufos[itr] = t;
+    }
+}
+
 num u; // count of live ufos
  
 void update_state() {
@@ -220,7 +259,12 @@ void update_state() {
             }
             
             if (u == 0) {
-                quit("You won the Game!\n");
+                //! todo: lvl_upd(); // disp "LVL UP %d" in the center, pause
+                
+                LATENCY -= 5000;
+                NUM_UFO += 2;
+                
+                populate();
             }
         } else { // shot is headed to the aup
             if (is_hit(aup, shots.dat[i].pos)) {
@@ -228,8 +272,8 @@ void update_state() {
             }
         }
     }
-}                
- 
+}
+
 int main() {
     initscr();
     cbreak(); // handle OS signals, and don't wait for \n's on input
@@ -240,22 +284,10 @@ int main() {
     getmaxyx(stdscr, rows, cols);
     
     srand(time(NULL));
- 
-    shots.max = 100;
-    shots.cur = 0;    
-    shots.dat = (struct Shot*) malloc(shots.max * sizeof(struct Shot));
- 
-    aup.x = (cols / 2) - 7;
-    aup.y = rows-1;
     
-    for (in=0; in < NUM_UFO; ++in) {
-        struct Ufo t;
-        t.pos.x = (in * 7) + 2;
-        t.pos.y = 0;
-        t.alive = 1;
-        t.bounce = 0;
-        ufos[in] = t;
-    }
+    NUM_UFO = 2;
+    
+    populate();
     
     while (1) {
         draw_all();
