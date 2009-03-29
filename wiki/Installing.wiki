@@ -1,0 +1,13 @@
+= Introduction =
+1. You need the ncurses library and a C compiler.
+2. Download the source (http://vadorz.googlecode.com/files/vadorz.c).
+
+For gcc:
+`$ gcc vadorz.c -Os -lncurses -o vadorz`
+
+To play:
+`$ ./vadorz`
+or
+`$ xterm -e ./vadorz`
+
+Enjoy!
