@@ -6,11 +6,11 @@
  *
  * Arrow Keys or WASD to move your ship.
  * F or Space to fire bullets.
+ * Z for MegaKill.
  * Q to exit.
  * 
  * To-do:
  * > Add fancy colors / graphics. [0%]
- * > Add level support, bosses. [1%]
 */
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
