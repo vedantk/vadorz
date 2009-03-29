@@ -1,5 +1,5 @@
 /*
- * vadorz.c (1.0)
+ * vadorz.c
  * -vk
  *
  * a ncurses space-invaders game
@@ -8,9 +8,6 @@
  * F or Space to fire bullets.
  * Z for MegaKill.
  * Q to exit.
- * 
- * To-do:
- * > Add fancy colors / graphics. [0%]
 */
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
@@ -18,11 +15,36 @@
 
 #define CONSTANT    80000               // max latency
 #define UFO_SHOT    3                   // percentage
- 
-#include <ncurses.h>
+
+#if defined (__WIN32__) && ! defined (__CYGWIN__) 
+    #include <curses.h>
+    typedef unsigned int uint;
+#else
+    #include <ncurses.h>
+#endif
+
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifdef _WIN32
+# if defined(_NEED_SLEEP_ONLY) && (defined(_MSC_VER) || defined(__MINGW32__))
+#  include <stdlib.h>
+#  define sleep(t) _sleep((t) * 1000)
+# else
+#  include <windows.h>
+#  define sleep(t)  Sleep((t) * 1000)
+# endif
+# ifndef _NEED_SLEEP_ONLY
+#  define msleep(t) Sleep(t)
+#  define usleep(t) Sleep((t) / 1000)
+# endif
+#else
+# include <unistd.h>
+# ifndef _NEED_SLEEP_ONLY
+#  define msleep(t) usleep((t) * 1000)
+# endif
+#endif
  
 typedef unsigned short int num;
 
@@ -57,7 +79,7 @@ num rows;
 num cols;
  
 struct Posn aup;
-struct Ufo ufos[(CONSTANT/5000)*2]; //! fixme
+struct Ufo ufos[(CONSTANT/5000)*2];
 struct shot_list shots;
  
 void quit(char* seq) {
@@ -97,10 +119,11 @@ void add_shot(struct Shot datum) {
 }
  
 int in; // input
+num u; // count of live ufos
+
 num i;
 num x; 
 num itr;
-num u; // count of live ufos
  
 inline void sprite_draw(struct Posn obj, const char* art) {
     mvprintw(obj.y, obj.x, art);
@@ -236,7 +259,7 @@ void populate() {
         t.pos.x = (itr * 7) + 2;
         t.pos.y = 0;
         t.alive = 1;
-        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0; //! fixme
+        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0;
         ufos[itr] = t;
     }
 }
