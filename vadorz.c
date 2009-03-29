@@ -15,7 +15,9 @@
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
-#define CONSTANT    80000
+
+#define CONSTANT    80000               // max latency
+#define UFO_SHOT    3                   // percentage
  
 #include <ncurses.h>
 #include <stdlib.h>
@@ -25,7 +27,8 @@
 typedef unsigned short int num;
 
 num NUM_UFO;
-uint LATENCY = CONSTANT-10000;
+num lvl;
+uint LATENCY = CONSTANT-5000;
 
 struct Posn {
     num x;
@@ -54,7 +57,7 @@ num rows;
 num cols;
  
 struct Posn aup;
-struct Ufo ufos[((CONSTANT/5000)*2)+10];
+struct Ufo ufos[(CONSTANT/5000)*2]; //! fixme
 struct shot_list shots;
  
 void quit(char* seq) {
@@ -94,8 +97,10 @@ void add_shot(struct Shot datum) {
 }
  
 int in; // input
-num i; // inner-itr
-num x; // inner-itr
+num i;
+num x; 
+num itr;
+num u; // count of live ufos
  
 inline void sprite_draw(struct Posn obj, const char* art) {
     mvprintw(obj.y, obj.x, art);
@@ -147,7 +152,7 @@ void run_ufos() {
             ufos[i].pos.x -= 1;
         }
         
-        if (rand() % 100 < 5) {
+        if (rand() % 100 < UFO_SHOT) {
             add_shot(mk_shot(ufos[i].pos, 0));
         }
         
@@ -170,7 +175,7 @@ void run_aup() {
         aup.y += (aup.y == rows-1) ? 0 : 1;
     } else if (in == ' ' || in == 'f' || in == 'F') {
         add_shot(mk_shot(aup, 1)); // register a shot going up
-    } else if (in == 'z' || in == 'Z') {
+    } else if (in == 'z' || in == 'Z') { // MegaKill
         for (i=0; i < cols; ++i) {
             struct Shot t;
             t.alive = 1;
@@ -226,19 +231,15 @@ void populate() {
     aup.x = (cols / 2) - 7;
     aup.y = rows-1;
 
-    num itr;
-    
     for (itr=0; itr < NUM_UFO; ++itr) {
         struct Ufo t;
         t.pos.x = (itr * 7) + 2;
         t.pos.y = 0;
         t.alive = 1;
-        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0; // fix this
+        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0; //! fixme
         ufos[itr] = t;
     }
 }
-
-num u; // count of live ufos
  
 void update_state() {
     for (i=0; i < shots.cur; ++i) {        
@@ -259,6 +260,8 @@ void update_state() {
             }
             
             if (u == 0) {
+                lvl += 1;
+                
                 //! todo: lvl_upd(); // disp "LVL UP %d" in the center, pause
                 
                 LATENCY -= 5000;
@@ -285,6 +288,7 @@ int main() {
     
     srand(time(NULL));
     
+    lvl = 1;
     NUM_UFO = 2;
     
     populate();
