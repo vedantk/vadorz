@@ -33,30 +33,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
+#define SHOT_ART    "!"			// must be 1 char
 
 #if defined (__WIN32__) && ! defined (__CYGWIN__) 
-# include <curses.h>
+ #include <curses.h>
 #else
-# include <ncurses.h>
+ #include <ncurses.h>
 #endif
 
 #include <stdlib.h>
 #include <time.h>
 
 #ifndef _WIN32
-# include <unistd.h>
+ #include <unistd.h>
 #else
-# if defined(_NEED_SLEEP_ONLY) && (defined(_MSC_VER) || defined(__MINGW32__))
-#  include <stdlib.h>
-#  define sleep(t) _sleep((t) * 1000)
-# else
-#  include <windows.h>
-#  define sleep(t)  Sleep((t) * 1000)
-# endif
-# ifndef _NEED_SLEEP_ONLY
-#  define msleep(t) Sleep(t)
-#  define usleep(t) Sleep((t) / 1000)
-# endif
+ #if defined(_NEED_SLEEP_ONLY) && (defined(_MSC_VER) || defined(__MINGW32__))
+  #define sleep(t) _sleep((t) * 1000)
+ #else
+  #include <windows.h>
+  #define sleep(t)  Sleep((t) * 1000)
+ #endif
+ #ifndef _NEED_SLEEP_ONLY
+  #define msleep(t) Sleep(t)
+  #define usleep(t) Sleep((t) / 1000)
+ #endif
 #endif
  
 typedef unsigned short int num;
@@ -159,7 +159,7 @@ void draw_all() {
             continue;
         }
         
-        sprite_draw(shots.dat[i].pos, "^");
+        sprite_draw(shots.dat[i].pos, SHOT_ART);
     }
     
     for (i=0; i < NUM_UFO; ++i) {
@@ -179,12 +179,12 @@ void run_ufos() {
             continue;
         }
         
-        if (ufos[i].pos.x >= cols - 7) {
+        if (ufos[i].pos.x >= cols - 8) {
             ufos[i].bounce = 1;
             ufos[i].pos.y += 1; 
         }
         
-        if (ufos[i].pos.x < 2) {
+        if (ufos[i].pos.x <= 3) {
             ufos[i].bounce = 0;
             ufos[i].pos.y += 1;
         }
@@ -258,6 +258,10 @@ void run_aup() {
  
 void run_shots() {
     for (i=0; i < shots.cur; ++i) {        
+        if (shots.dat[i].alive == 0) {
+            continue;
+        }
+
         in = shots.dat[i].pos.y;
         if (in < 0 || in > rows-1) {
             shots.dat[i].alive = 0;
@@ -288,7 +292,7 @@ void populate() {
     }
     
     shots.cur = 0;
-    shots.max = 100;
+    shots.max = cols*3;
     shots.dat = (struct Shot*) malloc(shots.max * sizeof(struct Shot));
     
     aup.x = (cols / 2) - 7;
@@ -296,21 +300,36 @@ void populate() {
 
     for (itr=0; itr < NUM_UFO; ++itr) {
         struct Ufo t;
-        t.pos.x = (itr * 6) + 2;
         t.pos.y = 0;
+        t.pos.x = (itr*8);
+
+        adjust_ufo_xpos:
+        if (t.pos.x >= cols-5) {
+            t.pos.y += 1;
+            t.pos.x /= 2;
+            if (t.pos.x >= cols-5) {
+                goto adjust_ufo_xpos;
+            }
+        }
+        
         t.alive = 1;
-        t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0;
+        t.bounce = (t.pos.x >= cols - 8) ? 1 : 0;
         ufos[itr] = t;
     }
 }
 
-void lvl_upd() {
+void lvld_up() {
     clear();
     
     mvprintw(rows/2, cols/2 - 5, "Lvl'd Up!");
     
     refresh();
     sleep(3);
+
+    LATENCY -= DECREMENT;
+    NUM_UFO += ADD_UFO;
+    UFO_SHOT += 1;
+    populate();
 }
 
 void update_state() {
@@ -332,13 +351,7 @@ void update_state() {
             }
             
             if (u == 0) {
-                lvl_upd();
-                
-                LATENCY -= DECREMENT;
-                NUM_UFO += ADD_UFO;
-                UFO_SHOT += 1;
-                
-                populate();
+                lvld_up();
             }
         } else { // shot is headed to the aup
             if (is_hit(aup, shots.dat[i].pos)) {
