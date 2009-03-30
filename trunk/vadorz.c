@@ -159,7 +159,7 @@ void draw_all() {
             continue;
         }
         
-        sprite_draw(shots.dat[i].pos, SHOT_ART);
+        sprite_draw(shots.dat[i].pos, (shots.dat[i].isGoingUp != 0) ? SHOT_ART : "x");
     }
     
     for (i=0; i < NUM_UFO; ++i) {
