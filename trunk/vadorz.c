@@ -183,20 +183,20 @@ void run_ufos() {
             continue;
         }
         
-        if (ufos[i].pos.x + 5 == cols) { // + 5 to adjust for the ufo length
+        if (ufos[i].pos.x + 6 >= cols) { // + 5+1 to adjust for the ufo length
             ufos[i].bounce = 1;
-            ufos[i].pos.y += 1;
+            ufos[i].pos.y += 1; 
         }
         
-        if (ufos[i].pos.x == 1) {
+        if (ufos[i].pos.x <= 1) {
             ufos[i].bounce = 0;
             ufos[i].pos.y += 1;
         }
  
         if (ufos[i].bounce == 0) {
-            ufos[i].pos.x += 1;
+            ufos[i].pos.x += 2;
         } else {
-            ufos[i].pos.x -= 1;
+            ufos[i].pos.x -= 2;
         }
         
         if (rand() % 100 < UFO_SHOT) {
