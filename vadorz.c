@@ -301,12 +301,12 @@ void populate() {
         t.pos.y = 0;
         t.pos.x = (itr*8);
 
-        adjust_ufo_xpos:
+        adjust_ufo_pos:
         if (t.pos.x >= cols-5) {
             t.pos.y += 1;
             t.pos.x /= 2;
             if (t.pos.x >= cols-5) {
-                goto adjust_ufo_xpos;
+                goto adjust_ufo_pos;
             }
         }
         
