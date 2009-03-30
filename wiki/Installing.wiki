@@ -4,7 +4,7 @@
 
 = Installing =
 For gcc:
- `$ gcc vadorz.c -Os -lncurses -o vadorz`
+ `$ gcc vadorz.c -O2 -lncurses -o vadorz`
 
 = Running =
 To play:
