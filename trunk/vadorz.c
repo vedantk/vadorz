@@ -8,28 +8,49 @@
  * F or Space to fire bullets.
  * Z for MegaKill.
  * Q to exit.
+ * 
+ * Copyright (c) 2009, Vedant Kumar and Oreoluwa Babarinsa
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ * > Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ * > Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation 
+ *   and/or other materials provided with the distribution.
+ * > The names of the authors may not be used to endorse or promote products 
+ *   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 */
  
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
 
-#define CONSTANT    40000               // max latency
-#define UFO_SHOT    3                   // percentage
-
-#define POLLS_PER_FRAME 60
-
 #if defined (__WIN32__) && ! defined (__CYGWIN__) 
-    #include <curses.h>
-    typedef unsigned int uint;
+# include <curses.h>
 #else
-    #include <ncurses.h>
+# include <ncurses.h>
 #endif
 
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 
-#ifdef _WIN32
+#ifndef _WIN32
+# include <unistd.h>
+#else
 # if defined(_NEED_SLEEP_ONLY) && (defined(_MSC_VER) || defined(__MINGW32__))
 #  include <stdlib.h>
 #  define sleep(t) _sleep((t) * 1000)
@@ -41,18 +62,22 @@
 #  define msleep(t) Sleep(t)
 #  define usleep(t) Sleep((t) / 1000)
 # endif
-#else
-# include <unistd.h>
-# ifndef _NEED_SLEEP_ONLY
-#  define msleep(t) usleep((t) * 1000)
-# endif
 #endif
  
 typedef unsigned short int num;
 
-num NUM_UFO;
-num lvl;
-uint LATENCY = CONSTANT-5000;
+#define MAX_SPAN    70000 // 500000
+#define DECREMENT   7000 // 5000
+#define POLLS       60
+int LATENCY = MAX_SPAN;
+
+#define ADD_UFO     3
+num UFO_SHOT = 5;
+num NUM_UFO = 2;
+
+num rows;
+num cols;
+num lvl = 1;
 
 struct Posn {
     num x;
@@ -76,15 +101,12 @@ struct shot_list {
     num cur;
     struct Shot* dat;
 };
-
-num rows;
-num cols;
  
 struct Posn aup;
-struct Ufo ufos[(CONSTANT/5000)*2];
+struct Ufo ufos[(MAX_SPAN/DECREMENT) * ADD_UFO];
 struct shot_list shots;
 
-int ch_stack[POLLS_PER_FRAME];
+int ch_stack[POLLS];
 
 int in; // input
 num u; // count of live ufos
@@ -190,10 +212,10 @@ void run_ufos() {
 }
  
 void run_aup() {
-    for (i=0; i < POLLS_PER_FRAME; ++i) {
+    for (i=0; i < POLLS; ++i) {
         in = getch();
         
-        if (i > 0 && i < POLLS_PER_FRAME-1) {
+        if (i > 0 && i < POLLS-1) {
             if (ch_stack[i-1] == ch_stack[i+1] && in == ch_stack[i-1]) {
                 ch_stack[i-1] = ERR;
                 ch_stack[i] = ERR;
@@ -203,11 +225,11 @@ void run_aup() {
             }
         }
         
-        usleep(LATENCY / POLLS_PER_FRAME);
+        usleep(LATENCY / POLLS);
     }
     
-    for (x=0; x < POLLS_PER_FRAME; ++x) {
-        in = ch_stack[x];
+    for (itr=0; itr < POLLS; ++itr) {
+        in = ch_stack[itr];
         
         if (in == ERR) {
             continue;
@@ -224,11 +246,11 @@ void run_aup() {
         } else if (in == ' ' || in == 'f' || in == 'F') {
             add_shot(mk_shot(aup, 1)); // register a shot going up
         } else if (in == 'z' || in == 'Z') { // MegaKill
-            for (i=0; i < cols; ++i) {
+            for (x=0; x < cols; ++x) {
                 struct Shot t;
                 t.alive = 1;
                 t.isGoingUp = 1;
-                t.pos.x = i;
+                t.pos.x = x;
                 t.pos.y = aup.y-1;
                 add_shot(t);
             }
@@ -263,7 +285,7 @@ inline int is_hit(struct Posn obj, struct Posn pos) { // ship : bullet
 }
 
 void populate() {
-    if (LATENCY < 5000) {
+    if (LATENCY <= DECREMENT) {
         quit("Wow. I can't believe you just won this game.\n");
     }
     
@@ -311,8 +333,9 @@ void update_state() {
                 
                 //! todo: lvl_upd(); // disp "LVL UP %d" in the center, pause
                 
-                LATENCY -= 5000;
-                NUM_UFO += 2;
+                LATENCY -= DECREMENT;
+                NUM_UFO += ADD_UFO;
+                UFO_SHOT += 1;
                 
                 populate();
             }
@@ -326,17 +349,14 @@ void update_state() {
 
 int main() {
     initscr();
-    cbreak(); // handle OS signals, and don't wait for \n's on input
+    cbreak();
     nodelay(stdscr, TRUE); // non-blocking getch()
-    noecho(); // don't print crap to scr
-    curs_set(0); // disable cursor
+    noecho(); 
+    curs_set(0);
     keypad(stdscr, TRUE);
     getmaxyx(stdscr, rows, cols);
     
     srand(time(NULL));
-    
-    lvl = 1;
-    NUM_UFO = 2;
     
     populate();
     
