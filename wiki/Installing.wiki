@@ -2,12 +2,14 @@
   # You need the ncurses library and a C compiler.
   # Download the source from SVN, or online.
 
+= Installing =
 For gcc:
- # `$ gcc vadorz.c -Os -lncurses -o vadorz`
+ `$ gcc vadorz.c -Os -lncurses -o vadorz`
 
+= Running =
 To play:
- # `$ ./vadorz`
+ `$ ./vadorz`
 or
- # `$ xterm -e ./vadorz`
+ `$ xterm -e ./vadorz`
 
 Enjoy!
