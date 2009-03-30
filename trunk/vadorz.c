@@ -13,8 +13,10 @@
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
 
-#define CONSTANT    80000               // max latency
+#define CONSTANT    40000               // max latency
 #define UFO_SHOT    3                   // percentage
+
+#define POLLS_PER_FRAME 60
 
 #if defined (__WIN32__) && ! defined (__CYGWIN__) 
     #include <curses.h>
@@ -74,14 +76,23 @@ struct shot_list {
     num cur;
     struct Shot* dat;
 };
- 
+
 num rows;
 num cols;
  
 struct Posn aup;
 struct Ufo ufos[(CONSTANT/5000)*2];
 struct shot_list shots;
- 
+
+int ch_stack[POLLS_PER_FRAME];
+
+int in; // input
+num u; // count of live ufos
+
+num i;
+num x; 
+num itr;
+
 void quit(char* seq) {
     clear();
     curs_set(2);
@@ -117,13 +128,6 @@ void add_shot(struct Shot datum) {
         quit(":: shot_list overflow!\n");
     }
 }
- 
-int in; // input
-num u; // count of live ufos
-
-num i;
-num x; 
-num itr;
  
 inline void sprite_draw(struct Posn obj, const char* art) {
     mvprintw(obj.y, obj.x, art);
@@ -186,32 +190,52 @@ void run_ufos() {
 }
  
 void run_aup() {
-    in = getch();
-    
-	if (in == KEY_LEFT || in == 'a' || in == 'A') {
-        aup.x -= (aup.x == 0) ? 0 : 1;
-    } else if (in == KEY_UP || in == 'w' || in == 'W') {
-        aup.y -= (aup.y == 0) ? 0 : 1;
-    } else if (in == KEY_RIGHT || in == 'd' || in == 'D') {
-        aup.x += (aup.x == cols-7) ? 0 : 1;
-    } else if (in == KEY_DOWN || in == 's' || in == 'S') {
-        aup.y += (aup.y == rows-1) ? 0 : 1;
-    } else if (in == ' ' || in == 'f' || in == 'F') {
-        add_shot(mk_shot(aup, 1)); // register a shot going up
-    } else if (in == 'z' || in == 'Z') { // MegaKill
-        for (i=0; i < cols; ++i) {
-            struct Shot t;
-            t.alive = 1;
-            t.isGoingUp = 1;
-            t.pos.x = i;
-            t.pos.y = aup.y-1;
-            add_shot(t);
+    for (i=0; i < POLLS_PER_FRAME; ++i) {
+        in = getch();
+        
+        if (i > 0 && i < POLLS_PER_FRAME-1) {
+            if (ch_stack[i-1] == ch_stack[i+1] && in == ch_stack[i-1]) {
+                ch_stack[i-1] = ERR;
+                ch_stack[i] = ERR;
+                ch_stack[i+1] = ERR;
+            } else {
+                ch_stack[i] = in;
+            }
         }
-    } else if (in == 'q' || in =='Q' || in == KEY_EXIT) {
-        quit("User Exit.\n");
+        
+        usleep(LATENCY / POLLS_PER_FRAME);
     }
-	
-	usleep(LATENCY);
+    
+    for (x=0; x < POLLS_PER_FRAME; ++x) {
+        in = ch_stack[x];
+        
+        if (in == ERR) {
+            continue;
+        }
+        
+        if (in == KEY_LEFT || in == 'a' || in == 'A') {
+            aup.x -= (aup.x == 0) ? 0 : 1;
+        } else if (in == KEY_UP || in == 'w' || in == 'W') {
+            aup.y -= (aup.y == 0) ? 0 : 1;
+        } else if (in == KEY_RIGHT || in == 'd' || in == 'D') {
+            aup.x += (aup.x == cols-7) ? 0 : 1;
+        } else if (in == KEY_DOWN || in == 's' || in == 'S') {
+            aup.y += (aup.y == rows-1) ? 0 : 1;
+        } else if (in == ' ' || in == 'f' || in == 'F') {
+            add_shot(mk_shot(aup, 1)); // register a shot going up
+        } else if (in == 'z' || in == 'Z') { // MegaKill
+            for (i=0; i < cols; ++i) {
+                struct Shot t;
+                t.alive = 1;
+                t.isGoingUp = 1;
+                t.pos.x = i;
+                t.pos.y = aup.y-1;
+                add_shot(t);
+            }
+        } else if (in == 'q' || in =='Q' || in == KEY_EXIT) {
+            quit("User Exit.\n");
+        }
+    }
  
     draw_all();
 }
