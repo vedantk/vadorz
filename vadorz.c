@@ -1,6 +1,5 @@
 /*
  * vadorz.c
- * -vk
  *
  * a ncurses space-invaders game
  *
