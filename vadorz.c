@@ -2,11 +2,7 @@
  * vadorz.c
  *
  * a ncurses space-invaders game
- *
- * Arrow Keys or WASD to move your ship.
- * F or Space to fire bullets.
- * Z for MegaKill.
- * Q to exit.
+ * http://code.google.com/p/vadorz/
  * 
  * Copyright (c) 2009, Vedant Kumar and Oreoluwa Babarinsa
  * All rights reserved.
@@ -183,12 +179,12 @@ void run_ufos() {
             continue;
         }
         
-        if (ufos[i].pos.x + 6 >= cols) { // + 5+1 to adjust for the ufo length
+        if (ufos[i].pos.x >= cols - 7) {
             ufos[i].bounce = 1;
             ufos[i].pos.y += 1; 
         }
         
-        if (ufos[i].pos.x <= 1) {
+        if (ufos[i].pos.x < 2) {
             ufos[i].bounce = 0;
             ufos[i].pos.y += 1;
         }
@@ -300,7 +296,7 @@ void populate() {
 
     for (itr=0; itr < NUM_UFO; ++itr) {
         struct Ufo t;
-        t.pos.x = (itr * 7) + 2;
+        t.pos.x = (itr * 6) + 2;
         t.pos.y = 0;
         t.alive = 1;
         t.bounce = (t.pos.x + 5 >= cols) ? 1 : 0;
