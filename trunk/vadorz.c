@@ -66,8 +66,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 typedef unsigned short int num;
 
-#define MAX_SPAN    70000 // 500000
-#define DECREMENT   7000 // 5000
+#define MAX_SPAN    60000 // 500000
+#define DECREMENT   6000 // 5000
 #define POLLS       60
 int LATENCY = MAX_SPAN;
 
@@ -77,7 +77,6 @@ num NUM_UFO = 2;
 
 num rows;
 num cols;
-num lvl = 1;
 
 struct Posn {
     num x;
@@ -309,7 +308,16 @@ void populate() {
         ufos[itr] = t;
     }
 }
- 
+
+void lvl_upd() {
+    clear();
+    
+    mvprintw(rows/2, cols/2 - 5, "Lvl'd Up!");
+    
+    refresh();
+    sleep(3);
+}
+
 void update_state() {
     for (i=0; i < shots.cur; ++i) {        
         if (shots.dat[i].alive == 0) { // skip out-of-bounds shots
@@ -329,9 +337,7 @@ void update_state() {
             }
             
             if (u == 0) {
-                lvl += 1;
-                
-                //! todo: lvl_upd(); // disp "LVL UP %d" in the center, pause
+                lvl_upd();
                 
                 LATENCY -= DECREMENT;
                 NUM_UFO += ADD_UFO;
