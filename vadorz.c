@@ -252,8 +252,6 @@ void run_aup() {
             quit("User Exit.\n");
         }
     }
- 
-    draw_all();
 }
  
 void run_shots() {
@@ -320,16 +318,16 @@ void populate() {
 
 void lvld_up() {
     clear();
-    
-    mvprintw(rows/2, cols/2 - 5, "Lvl'd Up!");
-    
-    refresh();
-    sleep(3);
 
     LATENCY -= DECREMENT;
     NUM_UFO += ADD_UFO;
     UFO_SHOT += 1;
     populate();
+    
+    mvprintw(rows/2, cols/2 - 5, "Lvl'd Up!");
+    
+    refresh();
+    sleep(3);
 }
 
 void update_state() {
@@ -380,6 +378,8 @@ int main() {
         run_ufos();
         run_aup();
         run_shots();
+        
+        draw_all();
         
         update_state();
     }
