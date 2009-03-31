@@ -3,39 +3,39 @@
  *
  * a ncurses space-invaders game
  * http://code.google.com/p/vadorz/
- * 
+ *
  * Copyright (c) 2009, Vedant Kumar and Oreoluwa Babarinsa
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * > Redistributions of source code must retain the above copyright notice, this
  *   list of conditions and the following disclaimer.
  * > Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation 
+ *   this list of conditions and the following disclaimer in the documentation
  *   and/or other materials provided with the distribution.
- * > The names of the authors may not be used to endorse or promote products 
+ * > The names of the authors may not be used to endorse or promote products
  *   derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
- 
+
 #define AUP_ART     "<{$^$}>"           // must be 7 chars
 #define UFO_ART     "(@#@)"             // must be 5 chars
 #define SHOT_ART    "!"			// must be 1 char
 
-#if defined (__WIN32__) && ! defined (__CYGWIN__) 
+#if defined (__WIN32__) && ! defined (__CYGWIN__)
  #include <curses.h>
 #else
  #include <ncurses.h>
@@ -58,12 +58,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   #define usleep(t) Sleep((t) / 1000)
  #endif
 #endif
- 
+
 typedef unsigned short int num;
 
-#define MAX_SPAN    60000 // 500000
-#define DECREMENT   6000 // 5000
-#define POLLS       60
+#define MAX_SPAN    80000
+#define DECREMENT   5000
+#define POLLS       65
 int LATENCY = MAX_SPAN;
 
 #define ADD_UFO     3
@@ -77,25 +77,25 @@ struct Posn {
     num x;
     num y;
 };
- 
+
 struct Ufo {
     struct Posn pos;
     num alive;
     num bounce; // 0 = has not reached right wall
 };
- 
+
 struct Shot {
     struct Posn pos;
     num alive;
     num isGoingUp;
 };
- 
+
 struct shot_list {
     num max;
     num cur;
     struct Shot* dat;
 };
- 
+
 struct Posn aup;
 struct Ufo ufos[(MAX_SPAN/DECREMENT) * ADD_UFO];
 struct shot_list shots;
@@ -106,7 +106,7 @@ int in; // input
 num u; // count of live ufos
 
 num i;
-num x; 
+num x;
 num itr;
 
 void quit(char* seq) {
@@ -117,7 +117,7 @@ void quit(char* seq) {
     free(shots.dat);
     exit(0);
 }
- 
+
 struct Shot mk_shot(struct Posn obj, num uphuh) {
     struct Shot datum;
     datum.pos.x = obj.x + 3;
@@ -126,89 +126,89 @@ struct Shot mk_shot(struct Posn obj, num uphuh) {
     datum.isGoingUp = uphuh;
     return datum;
 }
- 
+
 void add_shot(struct Shot datum) {
     if (shots.cur < shots.max) {
         shots.dat[shots.cur] = datum;
         shots.cur += 1;
     } else if (shots.cur == shots.max) {
         shots.max += shots.max / 2;
-        shots.dat = realloc(shots.dat, shots.max * sizeof(struct Shot));
-        
+        shots.dat = (struct Shot*) realloc(shots.dat, shots.max * sizeof(struct Shot));
+
         if (shots.dat == NULL) {
             quit(":: shot_list is out of memory!\n");
         }
-          
+
         add_shot(datum);
     } else {
         quit(":: shot_list overflow!\n");
     }
 }
- 
+
 inline void sprite_draw(struct Posn obj, const char* art) {
     mvprintw(obj.y, obj.x, art);
 }
- 
+
 void draw_all() {
     clear();
-    
+
     sprite_draw(aup, AUP_ART);
-    
+
     for (i=0; i < shots.cur; ++i) {
         if (shots.dat[i].alive == 0) {
             continue;
         }
-        
+
         sprite_draw(shots.dat[i].pos, (shots.dat[i].isGoingUp != 0) ? SHOT_ART : "x");
     }
-    
+
     for (i=0; i < NUM_UFO; ++i) {
         if (ufos[i].alive == 0) {
             continue;
         }
-        
+
         sprite_draw(ufos[i].pos, UFO_ART);
     }
-    
+
     refresh();
 }
- 
+
 void run_ufos() {
     for (i=0; i < NUM_UFO; ++i) {
         if (ufos[i].alive == 0) {
             continue;
         }
-        
+
         if (ufos[i].pos.x >= cols - 8) {
             ufos[i].bounce = 1;
-            ufos[i].pos.y += 1; 
+            ufos[i].pos.y += 1;
         }
-        
+
         if (ufos[i].pos.x <= 3) {
             ufos[i].bounce = 0;
             ufos[i].pos.y += 1;
         }
- 
+
         if (ufos[i].bounce == 0) {
             ufos[i].pos.x += 2;
         } else {
             ufos[i].pos.x -= 2;
         }
-        
+
         if (rand() % 100 < UFO_SHOT) {
             add_shot(mk_shot(ufos[i].pos, 0));
         }
-        
+
         if (ufos[i].pos.y == rows-1) {
             quit("You lost the game!\n");
         }
     }
 }
- 
+
 void run_aup() {
     for (i=0; i < POLLS; ++i) {
         in = getch();
-        
+
         if (i > 0 && i < POLLS-1) {
             if (ch_stack[i-1] == ch_stack[i+1] && in == ch_stack[i-1]) {
                 ch_stack[i-1] = ERR;
@@ -218,24 +218,24 @@ void run_aup() {
                 ch_stack[i] = in;
             }
         }
-        
+
         usleep(LATENCY / POLLS);
     }
-    
+
     for (itr=0; itr < POLLS; ++itr) {
         in = ch_stack[itr];
-        
+
         if (in == ERR) {
             continue;
         }
-        
-        if (in == KEY_LEFT || in == 'a' || in == 'A') {
+
+        if (in == KEY_LEFT || in == 'a' || in == 'h') {
             aup.x -= (aup.x == 0) ? 0 : 1;
-        } else if (in == KEY_UP || in == 'w' || in == 'W') {
+        } else if (in == KEY_UP || in == 'w' || in == 'j') {
             aup.y -= (aup.y == 0) ? 0 : 1;
-        } else if (in == KEY_RIGHT || in == 'd' || in == 'D') {
+        } else if (in == KEY_RIGHT || in == 'd' || in == 'k') {
             aup.x += (aup.x == cols-7) ? 0 : 1;
-        } else if (in == KEY_DOWN || in == 's' || in == 'S') {
+        } else if (in == KEY_DOWN || in == 's' || in == 'l') {
             aup.y += (aup.y == rows-1) ? 0 : 1;
         } else if (in == ' ' || in == 'f' || in == 'F') {
             add_shot(mk_shot(aup, 1)); // register a shot going up
@@ -253,9 +253,9 @@ void run_aup() {
         }
     }
 }
- 
+
 void run_shots() {
-    for (i=0; i < shots.cur; ++i) {        
+    for (i=0; i < shots.cur; ++i) {
         if (shots.dat[i].alive == 0) {
             continue;
         }
@@ -264,7 +264,7 @@ void run_shots() {
         if (in < 0 || in > rows-1) {
             shots.dat[i].alive = 0;
         }
-        
+
         if (shots.dat[i].isGoingUp != 0) {
             shots.dat[i].pos.y -= 1;
         } else {
@@ -272,7 +272,7 @@ void run_shots() {
         }
     }
 }
- 
+
 inline int is_hit(struct Posn obj, struct Posn pos) { // ship : bullet
     return (obj.y == pos.y
             && pos.x <= obj.x+7
@@ -284,15 +284,15 @@ void populate() {
     if (LATENCY <= DECREMENT) {
         quit("Wow. I can't believe you just won this game.\n");
     }
-    
+
     if (shots.dat) {
         free(shots.dat);
     }
-    
+
     shots.cur = 0;
     shots.max = cols*3;
     shots.dat = (struct Shot*) malloc(shots.max * sizeof(struct Shot));
-    
+
     aup.x = (cols / 2) - 7;
     aup.y = rows-1;
 
@@ -309,7 +309,7 @@ void populate() {
                 goto adjust_ufo_pos;
             }
         }
-        
+
         t.alive = 1;
         t.bounce = (t.pos.x >= cols - 8) ? 1 : 0;
         ufos[itr] = t;
@@ -323,19 +323,19 @@ void lvld_up() {
     NUM_UFO += ADD_UFO;
     UFO_SHOT += 1;
     populate();
-    
+
     mvprintw(rows/2, cols/2 - 5, "Lvl'd Up!");
-    
+
     refresh();
     sleep(3);
 }
 
 void update_state() {
-    for (i=0; i < shots.cur; ++i) {        
+    for (i=0; i < shots.cur; ++i) {
         if (shots.dat[i].alive == 0) { // skip out-of-bounds shots
             continue;
         }
-        
+
         if (shots.dat[i].isGoingUp != 0) { // shot is headed to ufos
             u = 0;
             for (x=0; x < NUM_UFO; ++x) {
@@ -347,7 +347,7 @@ void update_state() {
                     }
                 }
             }
-            
+
             if (u == 0) {
                 lvld_up();
             }
@@ -363,27 +363,27 @@ int main() {
     initscr();
     cbreak();
     nodelay(stdscr, TRUE); // non-blocking getch()
-    noecho(); 
+    noecho();
     curs_set(0);
     keypad(stdscr, TRUE);
     getmaxyx(stdscr, rows, cols);
-    
+
     srand(time(NULL));
-    
+
     populate();
-    
+
     while (1) {
         draw_all();
-        
+
         run_ufos();
         run_aup();
         run_shots();
-        
+
         draw_all();
-        
+
         update_state();
     }
- 
+
     quit("Game Over...\n");
     return 0;
 }
