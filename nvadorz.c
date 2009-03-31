@@ -36,18 +36,22 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-
+#define _UNICODE
+#define UNICODE
 #include "arraylist.h"
 
 #if defined (__WIN32__) && ! defined (__CYGWIN__) 
 # include <curses.h>
 typedef unsigned int uint;
+
 #else
 # include <ncurses.h>
 #endif
 
 #include <time.h>
 #include <string.h>
+#include <wchar.h>	
+#include <locale.h>
 
 #ifndef _WIN32
 # include <unistd.h>
@@ -68,10 +72,11 @@ typedef unsigned int uint;
 
 uint32_t FPS = 10; //Frames per Seconds
 uint32_t PPF = 60; //Polls per frame
-const char UFO_ART[] = "/(@_@)\\";
+const wchar_t UFO_ART[] = L"{%Y%}";
 uint16_t UFO_ART_SIZE;
+const uint16_t BUFF = 1;
 
-const char AUP_ART[] = "<\\|\\^/|/>";
+const wchar_t AUP_ART[] = L"(|+|)";
 uint16_t AUP_ART_SIZE;
 
 const uint32_t SECOND = 1000 * 1000;
@@ -115,8 +120,8 @@ struct Shot {
 	Posn pos;
 };
 
-const char AUP_SHOT_ART[] = "!";
-const char UFO_SHOT_ART[] = "V";
+const wchar_t * AUP_SHOT_ART = L"I";
+const wchar_t * UFO_SHOT_ART = L"\xae";
 //AUP and shots are cyan, UFOs are Green
 
 ArrayList key_stack;
@@ -188,21 +193,31 @@ void scores(){
 }
 
 void bootload(){
+	
 	new_ArrayList(&key_stack,sizeof(int)); 
 	new_ArrayList(&aup.shots,sizeof(Shot));
 	new_ArrayList(&ufos, sizeof(UFO));
 	new_ArrayList(&ufo_shots, sizeof(Shot));
-	UFO_ART_SIZE = strlen(UFO_ART);
-	AUP_ART_SIZE = strlen(AUP_ART);
+	UFO_ART_SIZE = wcslen(UFO_ART);
+	AUP_ART_SIZE = wcslen(AUP_ART);
 	initCurses();
-	init_pair(6, COLOR_BLUE, COLOR_BLACK);
-	init_pair(2, COLOR_GREEN, COLOR_BLACK);
-	init_pair(1, COLOR_RED, COLOR_BLACK);
+	if (!setlocale(LC_ALL, "en_GB.UTF8")) {
+    	fprintf(stderr, "Can't set the specified locale! "
+            "Check LANG, LC_CTYPE, LC_ALL.\n");
+    	exit(0);
+  	}
+	init_pair(6, COLOR_BLUE,COLOR_BLACK);
+	init_pair(2, COLOR_GREEN,COLOR_BLACK);
+	init_pair(1, COLOR_RED,COLOR_BLACK);
+	init_pair(5, COLOR_MAGENTA,COLOR_BLACK);
+	init_pair(7,COLOR_WHITE,COLOR_BLACK);
+	
+	srand(time(NULL));
 	clear();
 }
 
-void draw(Posn pos, const char * art){
-	mvprintw(pos.y, pos.x, art);
+void draw(Posn pos, const wchar_t * art){
+	mvprintw(pos.y, pos.x, "%ls",art);
 }
 
 Shot * makeAUPShot(){
@@ -224,14 +239,17 @@ bool addAUPShot(Shot * s){
 
 void draw_world(){
 	clear();
+	attrset(COLOR_PAIR(7));
+	attron(A_BOLD|A_PROTECT);
 	attron(COLOR_PAIR(6));
 	draw(aup.pos, AUP_ART);
-	
+
 	for(int i = 0; i < c(aup.shots,length); i++){
 		Shot *  s = c(aup.shots,get,i);
 		draw(s->pos,AUP_SHOT_ART);
 	}
 	attroff(COLOR_PAIR(6));
+
 	
 	attron(COLOR_PAIR(2));
 	for(int i = 0; i < c(ufos,length); i++){
@@ -241,9 +259,10 @@ void draw_world(){
 	
 	for(int i = 0; i < c(ufo_shots,length); i++){
 		Shot * s = c(ufo_shots,get,i);
-		draw(s->pos, UFO_SHOT_ART);
+		draw(s->pos,UFO_SHOT_ART);
 	}
 	attroff(COLOR_PAIR(2));
+	attroff(A_BOLD|A_PROTECT);
 		
 }
 
@@ -310,7 +329,18 @@ void runAUP(){
             }
         }else if(in == 'p' || in == 'P'){
 			nodelay(stdscr,FALSE);
-			getch();
+			attron(COLOR_PAIR(5));
+			clear();
+			mvprintw(rows/2, cols/2 -3, "Paused");
+			int k = getch();
+			if(k == 'q' || k == 'Q'){
+				endCurses();
+				scores();
+				sleep(1);
+				exit(0);
+			}
+			attroff(COLOR_PAIR(5));
+			draw_world();
 			nodelay(stdscr,TRUE);
 		} 
 	}
@@ -322,12 +352,12 @@ void runUFOs(){
 	for(int i = 0; i < c(ufos,length); i++){
 		UFO * u = c(ufos,get,i);
 		
-		if (u->pos.x >= cols - 10) {
+		if (u->pos.x >= cols - (UFO_ART_SIZE+BUFF)) {
             u->goRight = false;
             u->pos.y += 1; 
         }
         
-        if (u->pos.x <= 3) {
+        if (u->pos.x <= BUFF) {
             u->goRight = true;
             u->pos.y += 1;
         }
@@ -360,6 +390,7 @@ void runUFOs(){
 void populate() {
     if (level > 10) {
         endCurses();
+		printf("Just Kidding!\n");
 		printf("YOU WON!\n");
 		printf("SCORE : %d\n", SCORE);
 		sleep(3);
@@ -398,9 +429,9 @@ void levelUp(){
 	SHOOT_PERCENT += 3;
 	clear();
 	attron(COLOR_PAIR(1));
-	mvprintw(rows/2, cols/2 - 7, "You beat level %d!\n",level);
-	mvprintw(rows/2 + 1, cols/2 -7, "Get Ready for level %d!",level+1);
-	mvprintw(rows/2 + 2, cols/2 - 7,"Current Score : %d", SCORE);
+	mvprintw(rows/2 - 5, cols/2 - 10, "You beat level %d!\n",level);
+	mvprintw(rows/2 - 4, cols/2 - 10 , "Get Ready for level %d!",level+1);
+	mvprintw(rows/2 - 3, cols/2 - 10 ,"Current Score : %d", SCORE);
 	refresh();
 	sleep(3);
 	populate();
@@ -458,5 +489,6 @@ int main(){
 	}
 	endCurses();
 	scores();
+	sleep(3);
 	return 0;
 }
