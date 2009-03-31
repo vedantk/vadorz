@@ -76,7 +76,7 @@ uint16_t AUP_ART_SIZE;
 
 const uint32_t SECOND = 1000 * 1000;
 const uint32_t MAX_KEYS = 3; //MAXIMUM number of duplicate keys allowed
-uint16_t MAX_AUP_SHOTS = 8; //not sure I want to be const...
+int16_t MAX_AUP_SHOTS = 8; //not sure I want to be const...
 uint32_t SCORE = 0;
 const uint32_t UFO_POINTS = 100;
 uint32_t SHOOT_PERCENT = 3;
@@ -115,8 +115,8 @@ struct Shot {
 	Posn pos;
 };
 
-const char AUP_SHOT_ART[] = "*";
-const char UFO_SHOT_ART[] = "|";
+const char AUP_SHOT_ART[] = "!";
+const char UFO_SHOT_ART[] = "V";
 //AUP and shots are cyan, UFOs are Green
 
 ArrayList key_stack;
@@ -213,7 +213,7 @@ Shot * makeAUPShot(){
 }
 
 bool addAUPShot(Shot * s){
-	if(true /*c(aup.shots, length) < MAX_AUP_SHOTS*/){
+	if(c(aup.shots, length) < MAX_AUP_SHOTS || MAX_AUP_SHOTS <= 0){ //0 or less is infiite
 		c(aup.shots, add, (void *) s);
 		return true;
 	}else{
@@ -414,8 +414,11 @@ void update(){
 			UFO * u = c(ufos,get,q);
 			if(isHit(s->pos,u->pos,UFO_ART_SIZE)){
 				free(u);
+				free(s);
 				c(ufos,remove,q);
+				c(aup.shots,remove,i);
 				q--;
+				i--;
 				SCORE += UFO_POINTS;
 			}
 		}
