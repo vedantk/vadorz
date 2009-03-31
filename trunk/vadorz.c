@@ -281,7 +281,7 @@ void run_aup() {
             quit("User Exit.\n");
         } else if (in == 'p') {
 			nodelay(stdscr,FALSE);
-            mvprintw(0, rows, "Paused...");
+            mvprintw(0, 0, "Paused...");
 			getch();
 			nodelay(stdscr,TRUE);
         }
