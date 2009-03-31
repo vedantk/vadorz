@@ -69,8 +69,8 @@ typedef unsigned short int num;
 #define SHOOT_FACTOR 2
 num SHOOT_PERCENT = 2;
 
-#define FPS 13
-#define PPF 60
+#define FPS 20
+#define PPF 50
 /* End Tweak-able Settings */
 
 #define SECOND 1000000
