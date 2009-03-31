@@ -2,7 +2,7 @@
 This page describes how to build vadorz. If you just want to play the game, please see the Downloads tab.
 
 = Introduction =
-  # You need the ncurses library (if you are using Linux/BSD/*nix) or the pdcurses library (if you are using Windows).
+  # You need the ncurses library (if you are using Linux/BSD/+nix) or the pdcurses library (if you are using Windows).
   # You need a modern C compiler.
   # Download the source from SVN, or online.
 
