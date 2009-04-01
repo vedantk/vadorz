@@ -6,6 +6,11 @@ This page describes how to build vadorz. If you just want to play the game, plea
   # You need a modern C compiler.
   # Download the source from SVN, or online.
 
+= Checking Out =
+In order to get the code from SVN (the very latest builds):
+ `$ svn co http://vadorz.googlecode.com/svn/trunk/ vadorz`
+ `$ cd vadorz/`
+
 = Compiling =
 For gcc/ncurses:
  `$ gcc vadorz.c -O2 -lncurses -o vadorz`
