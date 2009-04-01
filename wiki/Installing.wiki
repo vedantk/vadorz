@@ -8,8 +8,8 @@ This page describes how to build vadorz. If you just want to play the game, plea
 
 = Checking Out =
 In order to get the code from SVN (the very latest builds):
- `$ svn co http://vadorz.googlecode.com/svn/trunk/ vadorz`
- `$ cd vadorz/`
+ * `$ svn co http://vadorz.googlecode.com/svn/trunk/ vadorz`
+ * `$ cd vadorz/`
 
 = Compiling =
 For gcc/ncurses:
