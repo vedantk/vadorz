@@ -1,7 +1,7 @@
 /*
  * vadorz.c
  *
- * a ncurses space-invaders game
+ * an addicting ncurses space-invaders game
  * http://code.google.com/p/vadorz/
  *
  * Copyright (c) 2009, Vedant Kumar and Oreoluwa Babarinsa
@@ -28,10 +28,9 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
 
-#if defined (__WIN32__) && ! defined (__CYGWIN__)
+#if defined (__WIN32__) && !defined (__CYGWIN__)
 # include <curses.h>
 #else
 # include <ncurses.h>
@@ -60,8 +59,8 @@ typedef unsigned short int num;
 
 /* Begin Tweak-able Settings */
 #define AUP_SHOT_ART "!"
-#define UFO_ART "|(@-@)|"
-#define AUP_ART "<$*\\A/*$>"
+#define UFO_ART "(@-@)"
+#define AUP_ART "$\\A/$"
 
 #define AUP_LIVES 5
 #define AUP_MEGAKILLS 5
@@ -113,8 +112,6 @@ struct Shot* shots;
 
 struct Aup aup;
 struct Ufo ufos[((100/SHOOT_FACTOR) * 2) + 4];
-
-int ch_stack[PPF];
 
 int in;
 num u;
@@ -232,24 +229,9 @@ void run_ufos() {
 }
 
 void run_aup() {
-    for (i=0; i < PPF; ++i) {
-        in = getch();
-
-        if (i > 0 && i < PPF-1) {
-            if (ch_stack[i-1] == ch_stack[i+1] && in == ch_stack[i-1]) {
-                ch_stack[i-1] = ERR;
-                ch_stack[i] = ERR;
-                ch_stack[i+1] = ERR;
-            } else {
-                ch_stack[i] = in;
-            }
-        }
-
-        usleep((SECOND/FPS) / PPF);
-    }
-
     for (x=0; x < PPF; ++x) {
-        in = ch_stack[x];
+        in = getch();
+        usleep((SECOND/FPS) / PPF);
 
         if (in == ERR) {
             continue;
@@ -367,7 +349,7 @@ void lvld_up() {
 
 void update_state() {
     for (i=0; i < scur; ++i) {
-        if (shots[i].alive == 0) { // skip out-of-bounds shots
+        if (shots[i].alive == 0) {
             continue;
         }
 
@@ -405,7 +387,7 @@ void update_state() {
 int main() {
     initscr();
     cbreak();
-    nodelay(stdscr, TRUE); // non-blocking getch()
+    nodelay(stdscr, TRUE);
     noecho();
     curs_set(0);
     keypad(stdscr, TRUE);
