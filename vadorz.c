@@ -128,9 +128,9 @@ void quit(const char* seq) {
     exit(0);
 }
 
-struct Shot mk_shot(struct Posn obj, num uphuh) {
+struct Shot mk_shot(struct Posn obj, num uphuh, num grace) {
     struct Shot datum;
-    datum.pos.x = obj.x + 3;
+    datum.pos.x = obj.x + grace;
     datum.pos.y = (uphuh != 0) ? obj.y-1 : obj.y+1;
     datum.alive = 1;
     datum.isGoingUp = uphuh;
@@ -218,7 +218,7 @@ void run_ufos() {
         }
 
         if (rand() % 100 < SHOOT_PERCENT) {
-            add_shot(mk_shot(ufos[i].pos, 0));
+            add_shot(mk_shot(ufos[i].pos, 0, UFO_ART_SIZE/2));
         }
 
         if (ufos[i].pos.y == rows-1) {
@@ -246,7 +246,7 @@ void run_aup() {
         } else if (in == KEY_DOWN || in == 's' || in == 'l') {
             aup.pos.y += (aup.pos.y == rows-1) ? 0 : 1;
         } else if (in == ' ' || in == 'f' || in == 'F') {
-            add_shot(mk_shot(aup.pos, 1));
+            add_shot(mk_shot(aup.pos, 1, AUP_ART_SIZE/2));
         } else if (in == 'z' || in == 'Z') {
             if (aup.megakills == 0) {
                 continue;
@@ -255,7 +255,7 @@ void run_aup() {
             }
             
             for (x=0; x < cols; ++x) {
-                struct Shot t = mk_shot(aup.pos, 1);
+                struct Shot t = mk_shot(aup.pos, 1, 0);
                 t.pos.x = x;
                 add_shot(t);
             }
